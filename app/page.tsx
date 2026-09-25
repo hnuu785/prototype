@@ -11,7 +11,7 @@ import { Dialog, DialogContent, DialogTitle, DialogDescription, DialogTrigger } 
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Textarea } from '@/components/ui/textarea';
 import { STORAGE_KEY, pages, pageLabels, questions, levels, options, baseline, initialState, representativeState, restore, serializable, collected, findings, missing, saving, checklist, type DemoState, type Page, type Attachment } from '@/lib/greencheck';
-import { agentAcknowledgement, interpretedAnswer, openingReply, skipAnswer } from '@/lib/conversation';
+import { agentAcknowledgement, answerDisplay, interpretedAnswer, openingReply, skipAnswer } from '@/lib/conversation';
 const fmt=(n:number)=>n.toLocaleString('ko-KR');
 function Tag({children,tone='green'}:{children:ReactNode,tone?:string}){return <span className={`tag ${tone}`}>{children}</span>}
 function Guide({children}:{children?:ReactNode}){return <div className="section-tag"><span className="mini-icon"><Leaf size={18}/></span>{children||'그린체크 가이드'}</div>}
@@ -63,7 +63,10 @@ function MobileChat({s,fileError,onConcern,onAnswer,onPrevious,onSkip,onNext,onA
  const [draft,setDraft]=useState('');
  const [pending,setPending]=useState<MobilePending|null>(null);
  const timers=useRef<ReturnType<typeof setTimeout>[]>([]);
+ const transcript=useRef<HTMLDivElement>(null);
  useEffect(()=>()=>{timers.current.forEach(clearTimeout)},[]);
+ useEffect(()=>{if(transcript.current)transcript.current.scrollTop=transcript.current.scrollHeight},[s.step,s.concern,pending?.stage,pending?.text,s.attachments[q.id]]);
+ useEffect(()=>{const node=transcript.current;if(!node)return;const observer=new ResizeObserver(()=>{node.scrollTop=node.scrollHeight});observer.observe(node);return()=>observer.disconnect()},[]);
  const prompt=opening?'안녕하세요. 요즘 집에서 어떤 점이 가장 불편하세요?':q.title;
  const reason=opening?'편하게 말씀해주시면 함께 살펴볼게요.':q.reason;
  const suggestions=opening?['난방을 해도 아이 방이 춥고 창가에 물기가 생겨요','창가에 물기가 자주 생겨요','냉난방비가 부담돼요']:('asset'in q?[]:q.options);
@@ -94,8 +97,18 @@ function MobileChat({s,fileError,onConcern,onAnswer,onPrevious,onSkip,onNext,onA
  return <section className="mobile-chat-screen" aria-label="우리 집 점검 대화">
   <div className="mobile-chat-top"><span className="mobile-chat-avatar"><Leaf size={20}/></span><div><strong>그린체크</strong><small>우리 집을 함께 살펴봐요</small></div><span className="mobile-chat-count">{opening?0:s.step+1} / {questions.length}</span></div>
   <Progress value={(opening?0:s.step+1)/questions.length*100} aria-label="대화 진행률"/>
-  <div className="mobile-chat-content" aria-live="polite">
-   {!pending&&<div className="mobile-chat-agent"><span><Sparkles size={15}/>그린체크</span><p>{prompt}</p><small>{reason}</small></div>}
+  <div className="mobile-chat-content" ref={transcript} role="log" aria-label="우리 집 점검 대화 기록" aria-live="polite">
+   {!opening&&<>
+    <div className="mobile-chat-agent history"><span><Sparkles size={15}/>그린체크</span><p>안녕하세요. 요즘 집에서 어떤 점이 가장 불편하세요?</p></div>
+    <div className="mobile-chat-user"><span>나</span><p>{s.concern}</p></div>
+    <div className="mobile-chat-agent ack"><span><Sparkles size={15}/>그린체크</span><p>{openingReply(s.concern)}</p></div>
+    {questions.slice(0,s.step).map(item=><div className="mobile-chat-turn" key={item.id}>
+     <div className="mobile-chat-agent history"><span><Sparkles size={15}/>그린체크</span><p>{item.title}</p></div>
+     <div className="mobile-chat-user"><span>나</span><p>{answerDisplay(s,item.id)||'지금은 잘 모르겠어요'}</p></div>
+     <div className="mobile-chat-agent ack"><span><Sparkles size={15}/>그린체크</span><p>{agentAcknowledgement(s,item.id)}</p></div>
+    </div>)}
+   </>}
+   <div className="mobile-chat-agent current"><span><Sparkles size={15}/>그린체크</span><p>{prompt}</p><small>{reason}</small></div>
    {pending&&<><div className="mobile-chat-user"><span>나</span><p>{pending.text}</p></div><div className="mobile-chat-agent mobile-chat-pending"><span><Sparkles size={15}/>그린체크</span>{pending.stage==='thinking'?<p className="mobile-typing" role="status" aria-label="그린체크가 답변을 살펴보고 있어요"><i/><i/><i/></p>:<p>{pending.reply}</p>}</div></>}
    {!opening&&'asset'in q&&!pending&&<div className="mobile-chat-evidence"><Evidence attachment={s.attachments[q.id]} id={q.id}/></div>}
   </div>
