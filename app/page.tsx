@@ -38,7 +38,7 @@ function ConversationCollect({s,busy,fileError,onAnswer,onPrevious,onSkip,onNext
     <p className="tiny-note">직접 첨부한 파일은 미리보기만 제공하며 저장·분석·전송하지 않아요.</p>
     <div className="cta-space"><Next disabled={busy||!['sample','upload'].includes(s.attachments[q.id]?.kind)} onClick={onNext}>{busy?'예시 점검 기록을 정리하고 있어요…':s.step===7?'사전점검 결과 보기':'이 자료로 계속하기'}</Next></div>
    </>:<>
-    <div className="welcome-prompts answer-examples"><span>이렇게 답해도 좋아요</span><div className="answer-example-list" role="group" aria-label="답변 예시, 좌우로 스크롤" tabIndex={0}>{q.options.map(option=><button type="button" key={option} disabled={busy} onClick={()=>onAnswer(option)}>{option}<ArrowUpRight size={15}/></button>)}</div></div>
+    <div className="welcome-prompts"><span>이렇게 답해도 좋아요</span>{q.options.map(option=><button type="button" key={option} disabled={busy} onClick={()=>onAnswer(option)}>{option}<ArrowUpRight size={15}/></button>)}</div>
     <label className="field-label" htmlFor="answer-draft">내 말로 답장하기</label>
     <Textarea id="answer-draft" value={draft} maxLength={1000} placeholder="답장을 선택하거나 직접 입력해보세요" onChange={e=>setDraft(e.target.value)} onKeyDown={e=>{if(e.key==='Enter'&&!e.shiftKey){e.preventDefault();send()}}}/>
     <div className="cta-space"><Next disabled={!draft.trim()||busy} onClick={send}>답장 보내기</Next></div>
