@@ -11,7 +11,7 @@ import { Dialog, DialogContent, DialogTitle, DialogDescription, DialogTrigger } 
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Textarea } from '@/components/ui/textarea';
 import { STORAGE_KEY, pages, pageLabels, questions, levels, options, baseline, initialState, representativeState, restore, serializable, collected, findings, missing, saving, checklist, type DemoState, type Page, type Attachment } from '@/lib/greencheck';
-import { agentAcknowledgement, answerDisplay, interpretedAnswer, openingReply, skipAnswer } from '@/lib/conversation';
+import { agentAcknowledgement, answerDisplay, answerPhrase, interpretedAnswer, openingReply, skipAnswer } from '@/lib/conversation';
 const fmt=(n:number)=>n.toLocaleString('ko-KR');
 function Tag({children,tone='green'}:{children:ReactNode,tone?:string}){return <span className={`tag ${tone}`}>{children}</span>}
 function Guide({children}:{children?:ReactNode}){return <div className="section-tag"><span className="mini-icon"><Leaf size={18}/></span>{children||'그린체크 가이드'}</div>}
@@ -38,7 +38,7 @@ function ConversationCollect({s,busy,fileError,onAnswer,onPrevious,onSkip,onNext
     <p className="tiny-note">직접 첨부한 파일은 미리보기만 제공하며 저장·분석·전송하지 않아요.</p>
     <div className="cta-space"><Next disabled={busy||!['sample','upload'].includes(s.attachments[q.id]?.kind)} onClick={onNext}>{busy?'예시 점검 기록을 정리하고 있어요…':s.step===7?'사전점검 결과 보기':'이 자료로 계속하기'}</Next></div>
    </>:<>
-    <div className="welcome-prompts"><span>이렇게 답해도 좋아요</span>{q.options.map(option=><button type="button" key={option} disabled={busy} onClick={()=>onAnswer(option)}>{option}<ArrowUpRight size={15}/></button>)}</div>
+    <div className="welcome-prompts"><span>이렇게 답해도 좋아요</span>{q.options.map(option=><button type="button" key={option} disabled={busy} onClick={()=>onAnswer(option)}>{answerPhrase(q.id,option)}<ArrowUpRight size={15}/></button>)}</div>
     <label className="field-label" htmlFor="answer-draft">내 말로 답장하기</label>
     <Textarea id="answer-draft" value={draft} maxLength={1000} placeholder="답장을 선택하거나 직접 입력해보세요" onChange={e=>setDraft(e.target.value)} onKeyDown={e=>{if(e.key==='Enter'&&!e.shiftKey){e.preventDefault();send()}}}/>
     <div className="cta-space"><Next disabled={!draft.trim()||busy} onClick={send}>답장 보내기</Next></div>
@@ -76,14 +76,15 @@ function MobileChat({s,fileError,onConcern,onAnswer,onPrevious,onSkip,onNext,onA
   timers.current.push(setTimeout(()=>setPending({text,stage:'reply',reply}),850));
   timers.current.push(setTimeout(()=>{setPending(null);setDraft('');advance()},1850));
  }
- function submit(text:string){
+ function submit(text:string,fromSuggestion=false){
   const value=text.trim();if(!value||pending)return;
   if(opening){transition(value,openingReply(value),()=>onConcern(value));return}
   if('asset'in q)return;
-  const answer=interpretedAnswer(q.id,value)||skipAnswer;
-  const note=q.options.some(option=>option===value)?undefined:value;
+  const answer=fromSuggestion?value:interpretedAnswer(q.id,value)||skipAnswer;
+  const matchedOption=q.options.some(option=>option===value);
+  const note=fromSuggestion||matchedOption?undefined:value;
   const preview={...s,answers:{...s.answers,[q.id]:answer},notes:{...s.notes,[q.id]:note||''}};
-  transition(value,agentAcknowledgement(preview,q.id),()=>onAnswer(answer,note));
+  transition(fromSuggestion||matchedOption?answerPhrase(q.id,value):value,agentAcknowledgement(preview,q.id),()=>onAnswer(answer,note));
  }
  function skip(){
   if(pending)return;
@@ -114,7 +115,7 @@ function MobileChat({s,fileError,onConcern,onAnswer,onPrevious,onSkip,onNext,onA
   </div>
   <div className="mobile-chat-bottom">
    {pending?<p className="mobile-pending-caption">{pending.stage==='thinking'?'답변을 살펴보고 있어요…':'이어서 살펴볼게요.'}</p>:<>
-    {opening||!('asset'in q)?<><span className="mobile-reply-label">이렇게 답해도 좋아요</span><div className="mobile-chat-suggestions">{suggestions.map(option=><button key={option} type="button" onClick={()=>submit(option)}>{option}<ArrowUpRight size={14}/></button>)}</div><div className="mobile-chat-composer"><Textarea aria-label="그린체크에게 답장" value={draft} maxLength={1000} placeholder="내 말로 답장하기" onChange={e=>setDraft(e.target.value)} onKeyDown={e=>{if(e.key==='Enter'&&!e.shiftKey){e.preventDefault();submit(draft)}}}/><Button aria-label="답장 보내기" disabled={!draft.trim()} onClick={()=>submit(draft)}><ArrowRight size={20}/></Button></div></>:<><div className="mobile-asset-actions"><Button variant="outline" onClick={()=>onAttach({kind:'sample',name:q.sample})}><Sparkles size={16}/>예시 {q.asset==='photo'?'사진':'고지서'}</Button><label className="upload-button"><Upload size={16}/>내 파일 첨부<input aria-label="내 파일 첨부" type="file" accept={q.asset==='photo'?'.jpg,.jpeg,.png,.webp':'.jpg,.jpeg,.png,.webp,.pdf'} onChange={e=>{onUpload(e.target.files?.[0]);e.target.value=''}}/></label></div>{fileError&&<p className="error" role="alert">{fileError}</p>}<Button className="mobile-asset-next" disabled={!['sample','upload'].includes(s.attachments[q.id]?.kind)} onClick={continueWithAsset}>{s.step===questions.length-1?'점검 결과 보기':'이 자료로 계속하기'}<ArrowRight size={17}/></Button><p className="mobile-asset-note">예시 자료와 첨부 파일은 실제 분석·전송에 사용되지 않아요.</p></>}
+    {opening||!('asset'in q)?<><span className="mobile-reply-label">이렇게 답해도 좋아요</span><div className="mobile-chat-suggestions">{suggestions.map(option=><button key={option} type="button" onClick={()=>submit(option,true)}>{opening?option:answerPhrase(q.id,option)}<ArrowUpRight size={14}/></button>)}</div><div className="mobile-chat-composer"><Textarea aria-label="그린체크에게 답장" value={draft} maxLength={1000} placeholder="내 말로 답장하기" onChange={e=>setDraft(e.target.value)} onKeyDown={e=>{if(e.key==='Enter'&&!e.shiftKey){e.preventDefault();submit(draft)}}}/><Button aria-label="답장 보내기" disabled={!draft.trim()} onClick={()=>submit(draft)}><ArrowRight size={20}/></Button></div></>:<><div className="mobile-asset-actions"><Button variant="outline" onClick={()=>onAttach({kind:'sample',name:q.sample})}><Sparkles size={16}/>예시 {q.asset==='photo'?'사진':'고지서'}</Button><label className="upload-button"><Upload size={16}/>내 파일 첨부<input aria-label="내 파일 첨부" type="file" accept={q.asset==='photo'?'.jpg,.jpeg,.png,.webp':'.jpg,.jpeg,.png,.webp,.pdf'} onChange={e=>{onUpload(e.target.files?.[0]);e.target.value=''}}/></label></div>{fileError&&<p className="error" role="alert">{fileError}</p>}<Button className="mobile-asset-next" disabled={!['sample','upload'].includes(s.attachments[q.id]?.kind)} onClick={continueWithAsset}>{s.step===questions.length-1?'점검 결과 보기':'이 자료로 계속하기'}<ArrowRight size={17}/></Button><p className="mobile-asset-note">예시 자료와 첨부 파일은 실제 분석·전송에 사용되지 않아요.</p></>}
     <div className="mobile-chat-secondary"><button type="button" onClick={onPrevious}><ArrowLeft size={15}/>{opening?'처음으로':'이전 질문'}</button>{!opening&&<button type="button" onClick={skip}>잘 모르겠어요 · 건너뛰기</button>}</div>
    </>}
   </div>

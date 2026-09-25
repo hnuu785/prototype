@@ -2,6 +2,34 @@ import { questions, type DemoState } from './greencheck.ts';
 
 export const skipAnswer = '모름·건너뛰기';
 
+const answerPhrases: Record<string, Record<string, string>> = {
+  room: {
+    '아이 방': '아이 방이 가장 춥게 느껴져요.',
+    '거실': '거실이 가장 춥게 느껴져요.',
+    '안방': '안방이 가장 춥게 느껴져요.',
+  },
+  timing: {
+    '겨울 아침과 밤': '겨울 아침과 밤에 가장 불편해요.',
+    '겨울 내내': '겨울 내내 계속 불편해요.',
+    '비가 온 뒤': '비가 온 뒤에 더 불편해요.',
+  },
+  house: {
+    '서울 · 1998년 · 59㎡ · 소유': '네, 서울에 있는 1998년 준공 59㎡ 빌라를 소유하고 있어요.',
+  },
+  family: {
+    '자녀와 함께 거주 · 저녁과 밤 주로 재실': '아이와 함께 살고, 저녁과 밤에 주로 집에 있어요.',
+    '생활 특성을 아직 확인하지 못했어요': '함께 사는 분과 집에 머무는 시간은 아직 확인하지 못했어요.',
+  },
+  vent: {
+    '추워서 자주 환기하지 못해요': '추워서 겨울에는 자주 환기하지 못해요.',
+    '하루 2번 이상 환기해요': '겨울에도 하루 2번 이상 환기해요.',
+  },
+};
+
+export function answerPhrase(id: string, answer: string): string {
+  return answerPhrases[id]?.[answer] ?? answer;
+}
+
 export function openingReply(concern: string): string {
   if (/춥|추워|외풍/.test(concern) && /물기|결로|젖/.test(concern)) return '추운 공간과 창가의 물기가 함께 걱정되시는군요. 원인을 단정하기 전에 언제, 어디서 나타나는지부터 함께 살펴볼게요.';
   if (/춥|추워|외풍/.test(concern)) return '집 안이 춥게 느껴지시는군요. 어떤 공간에서, 언제 그런지부터 함께 살펴볼게요.';
@@ -57,5 +85,5 @@ export function answerDisplay(state: DemoState, id: string): string {
   const attachment = state.attachments[id];
   if (attachment) return attachment.kind === 'skipped' ? '지금은 건너뛸게요' : attachment.kind === 'reattach' ? `${attachment.name} · 다시 첨부 필요` : `${attachment.name} ${attachment.kind === 'sample' ? '· 예시 자료' : '· 미리보기만'}`;
   if (state.notes[id]) return state.notes[id];
-  return state.answers[id] === skipAnswer ? '지금은 잘 모르겠어요' : state.answers[id] || '';
+  return state.answers[id] === skipAnswer ? '지금은 잘 모르겠어요' : answerPhrase(id, state.answers[id] || '');
 }
