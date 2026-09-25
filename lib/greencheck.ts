@@ -6,7 +6,7 @@ export const pageLabels = ['시작','집 살펴보기','점검 결과','개선 �
 export const questions = [
  {id:'room',label:'불편한 공간',title:'어느 공간이 가장 춥게 느껴지나요?',reason:'공간마다 창의 방향과 외벽 면적이 달라요. 먼저 불편한 곳을 좁혀볼게요.',options:['아이 방','거실','안방'],sample:'아이 방'},
  {id:'timing',label:'발생 시기',title:'주로 언제 불편함을 느끼세요?',reason:'발생 시기를 알면 외풍과 표면 결로의 가능성을 살펴볼 수 있어요.',options:['겨울 아침과 밤','겨울 내내','비가 온 뒤'],sample:'겨울 아침과 밤'},
- {id:'house',label:'집 기본정보',title:'이번에 살펴볼 집 정보를 확인해주세요.',reason:'대표 가구의 준공연도와 면적을 개선 효과 비교의 공통 조건으로 사용해요.',options:['서울 · 1998년 · 59㎡ · 소유'],sample:'서울 · 1998년 · 59㎡ · 소유'},
+ {id:'house',label:'집 기본정보',title:'소유하신 집이 서울의 1998년 준공 빌라, 전용 59㎡가 맞을까요?',reason:'집의 연식과 면적은 뒤에서 개선 효과를 비교할 때 같은 조건으로 사용해요.',options:['서울 · 1998년 · 59㎡ · 소유'],sample:'서울 · 1998년 · 59㎡ · 소유'},
  {id:'family',label:'거주·이용 특성',title:'아이와 함께 지내는 집인가요?',reason:'머무는 시간과 가족의 생활 특성도 개선 방향에 반영해요.',options:['자녀와 함께 거주 · 저녁과 밤 주로 재실','생활 특성을 아직 확인하지 못했어요'],sample:'자녀와 함께 거주 · 저녁과 밤 주로 재실'},
  {id:'vent',label:'환기 습관',title:'겨울에는 보통 어떻게 환기하세요?',reason:'창가 물기는 단열 성능과 함께 실내 습도·환기 습관의 영향을 받을 수 있어요.',options:['추워서 자주 환기하지 못해요','하루 2번 이상 환기해요'],sample:'추워서 자주 환기하지 못해요'},
  {id:'window',label:'창호 사진',title:'창틀과 유리 아래쪽을 보여주세요.',reason:'물기가 맺힌 위치와 창틀의 연결 부위를 함께 확인하기 위해서예요.',asset:'photo',sample:'창호 예시 사진'},
@@ -24,9 +24,9 @@ export const baseline = {energy:12000,cost:180};
 export type OptionId = typeof options[number]['id'];
 export const attachmentSchema=z.object({kind:z.enum(['sample','upload','reattach','skipped']),name:z.string().max(300),url:z.string().optional(),mime:z.string().optional()});
 export type Attachment=z.infer<typeof attachmentSchema>;
-const stateSchema=z.object({version:z.literal(1),page:z.enum(pages),step:z.number().int().min(0).max(7),concern:z.string().max(1000),answers:z.record(z.string(),z.string().max(1000)),attachments:z.record(z.string(),attachmentSchema),selected:z.enum(['window','insulation','combined']),consent:z.boolean(),submitted:z.boolean(),checks:z.array(z.string()),started:z.boolean()});
+const stateSchema=z.object({version:z.literal(1),page:z.enum(pages),step:z.number().int().min(0).max(7),concern:z.string().max(1000),answers:z.record(z.string(),z.string().max(1000)),notes:z.record(z.string(),z.string().max(1000)).default({}),attachments:z.record(z.string(),attachmentSchema),selected:z.enum(['window','insulation','combined']),consent:z.boolean(),submitted:z.boolean(),checks:z.array(z.string()),started:z.boolean()});
 export type DemoState=z.infer<typeof stateSchema>;
-export function initialState():DemoState{return {version:1,page:'start',step:0,concern:'',answers:{},attachments:{},selected:'combined',consent:false,submitted:false,checks:[],started:false};}
+export function initialState():DemoState{return {version:1,page:'start',step:0,concern:'',answers:{},notes:{},attachments:{},selected:'combined',consent:false,submitted:false,checks:[],started:false};}
 export function representativeState():DemoState{return {...initialState(),started:true,page:'collect',step:5,concern:'난방을 해도 아이 방이 춥고 창가에 물기가 생겨요',answers:Object.fromEntries(questions.filter(q=>!('asset' in q)).map(q=>[q.id,q.sample])),attachments:{window:{kind:'sample',name:'아이 방 창호 · 생성된 예시 사진'},wall:{kind:'sample',name:'창 옆 벽면 · 동일 예시 사진'},bill:{kind:'sample',name:'연간 사용량·요금 예시'}}};}
 export function serializable(s:DemoState):DemoState{return {...s,attachments:Object.fromEntries(Object.entries(s.attachments).map(([k,v])=>[k,v.kind==='upload'?{kind:'reattach' as const,name:v.name,mime:v.mime}:v]))};}
 export function restore(raw:string|null):DemoState{if(!raw)return initialState();try{const parsed=stateSchema.safeParse(JSON.parse(raw));if(!parsed.success)return initialState();return serializable(parsed.data);}catch{return initialState();}}
