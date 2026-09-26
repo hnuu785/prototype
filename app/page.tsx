@@ -111,7 +111,7 @@ function MobileChat({s,fileError,onConcern,onAnswer,onPrevious,onSkip,onNext,onA
    </>}
    <div className="mobile-chat-agent current"><span><Sparkles size={15}/>그린체크</span><p>{prompt}</p><small>{reason}</small></div>
    {pending&&<><div className="mobile-chat-user"><span>나</span><p>{pending.text}</p></div><div className="mobile-chat-agent mobile-chat-pending"><span><Sparkles size={15}/>그린체크</span>{pending.stage==='thinking'?<p className="mobile-typing" role="status" aria-label="그린체크가 답변을 살펴보고 있어요"><i/><i/><i/></p>:<p>{pending.reply}</p>}</div></>}
-   {!opening&&'asset'in q&&!pending&&<div className="mobile-chat-evidence"><Evidence attachment={s.attachments[q.id]} id={q.id}/></div>}
+   {!opening&&'asset'in q&&!pending&&<div className="mobile-chat-evidence"><Evidence attachment={s.attachments[q.id]} id={q.id}/>{q.asset==='photo'&&['sample','upload'].includes(s.attachments[q.id]?.kind)&&<p className="mobile-evidence-name" title={s.attachments[q.id]?.name}><CheckCircle2 size={15}/><span>{s.attachments[q.id]?.name}</span></p>}</div>}
   </div>
   <div className="mobile-chat-bottom">
    {pending?<p className="mobile-pending-caption">{pending.stage==='thinking'?'답변을 살펴보고 있어요…':'이어서 살펴볼게요.'}</p>:<>

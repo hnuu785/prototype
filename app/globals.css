@@ -60,10 +60,12 @@
  .mobile-typing i{display:block;width:7px;height:7px;border-radius:50%;background:#83af92;animation:mobile-typing 1.1s ease-in-out infinite}
  .mobile-typing i:nth-child(2){animation-delay:.15s}.mobile-typing i:nth-child(3){animation-delay:.3s}
  @keyframes mobile-typing{0%,60%,100%{transform:translateY(0);opacity:.55}30%{transform:translateY(-5px);opacity:1}}
- .mobile-chat-evidence{width:100%;min-height:0;overflow:hidden}
+ .mobile-chat-evidence{width:100%;flex:none}
  .mobile-chat-evidence .empty-attachment{height:clamp(105px,20dvh,165px)}
  .mobile-chat-evidence .photo-frame{height:clamp(130px,24dvh,205px)}
  .mobile-chat-evidence .user-preview img{max-height:clamp(130px,24dvh,205px)}
+ .mobile-evidence-name{display:flex;align-items:center;gap:7px;min-width:0;margin-top:8px;color:#326d4e;font-size:.78rem}
+ .mobile-evidence-name svg{flex:none}.mobile-evidence-name span{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
  .mobile-chat-evidence .bill{padding:12px}.mobile-chat-evidence .bill-values{padding:10px 0;margin:9px 0}.mobile-chat-evidence .bill-values strong{font-size:1.35rem}.mobile-chat-evidence .bill>p{font-size:.68rem}
  .mobile-chat-bottom{flex:none;padding:15px 20px calc(16px + env(safe-area-inset-bottom));background:white;border-top:1px solid #e0ebe4;box-shadow:0 -8px 24px #2f604508}
  .mobile-reply-label{display:block;font-size:.77rem;color:#7b8b80;margin-bottom:9px}
